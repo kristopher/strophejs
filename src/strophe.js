@@ -1256,9 +1256,10 @@ Strophe.Request.prototype = {
             }
           } else if (this.xhr.responseText) {
               if (this._titanium) {
-                doc = document.implementation.createDocument('http://www.w3.org/1999/xhtml', 'html');
+                var doc = document.implementation.createDocument('http://www.w3.org/1999/xhtml', 'html');
                 doc.documentElement.innerHTML = this.xhr.responseText;
                 node = doc.documentElement.childNodes[0];
+                doc = null;
               } else {
                 Strophe.error("invalid response received");
                 Strophe.error("responseText: " + this.xhr.responseText);
