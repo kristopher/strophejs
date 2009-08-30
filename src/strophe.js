@@ -1254,12 +1254,18 @@ Strophe.Request.prototype = {
                               Strophe.serialize(this.xhr.responseXML));
                 throw "parsererror";
             }
-        } else if (this.xhr.responseText) {
-            Strophe.error("invalid response received");
-            Strophe.error("responseText: " + this.xhr.responseText);
-            Strophe.error("responseXML: " +
-                          Strophe.serialize(this.xhr.responseXML));
-        }
+          } else if (this.xhr.responseText) {
+              if (this._titanium) {
+                doc = document.implementation.createDocument('http://www.w3.org/1999/xhtml', 'html');
+                doc.documentElement.innerHTML = this.xhr.responseText;
+                node = doc.documentElement.childNodes[0];
+              } else {
+                Strophe.error("invalid response received");
+                Strophe.error("responseText: " + this.xhr.responseText);
+                Strophe.error("responseXML: " +
+                              Strophe.serialize(this.xhr.responseXML));              
+              }
+          }
 
         return node;
     },
@@ -1275,7 +1281,11 @@ Strophe.Request.prototype = {
     _newXHR: function ()
     {
         var xhr = null;
-        if (window.XMLHttpRequest) {
+        if (Titanium.Network) {
+          xhr = Titanium.Network.createHTTPClient();
+          xhr.setRequestHeader('Accept', 'text/xml, application/xml');
+          this._titanium = true;
+        } else if (window.XMLHttpRequest) {
             xhr = new XMLHttpRequest();
             if (xhr.overrideMimeType) {
                 xhr.overrideMimeType("text/xml");
