@@ -1295,7 +1295,7 @@ Strophe.Request.prototype = {
     _parseResponseText: function (response) 
     {
         if (typeof DOMParser !== 'undefined') {
-            return (new DOMParser().parseFromString(response, 'text/xml');
+            return (new DOMParser().parseFromString(response, 'text/xml'));
         }
     },
 
