@@ -1244,55 +1244,83 @@ Strophe.Request.prototype = {
      */
     getResponse: function ()
     {
-        var node = null;
-        if (this.xhr.responseXML && this.xhr.responseXML.documentElement) {
-            node = this.xhr.responseXML.documentElement;
-            if (node.tagName == "parsererror") {
-                Strophe.error("invalid response received");
-                Strophe.error("responseText: " + this.xhr.responseText);
-                Strophe.error("responseXML: " +
-                              Strophe.serialize(this.xhr.responseXML));
-                throw "parsererror";
-            }
-          } else if (this.xhr.responseText) {
-              if (this._titanium) {
-                var doc = document.implementation.createDocument('http://www.w3.org/1999/xhtml', 'html');
-                doc.documentElement.innerHTML = this.xhr.responseText;
-                node = doc.documentElement.childNodes[0];
-                doc = null;
-              } else {
-                Strophe.error("invalid response received");
-                Strophe.error("responseText: " + this.xhr.responseText);
-                Strophe.error("responseXML: " +
-                              Strophe.serialize(this.xhr.responseXML));              
-              }
-          }
+        var xml_doc, body, parser_error, node = null;
+        if (this.xhr.responseXML) {
+            xml_doc = this.xhr.responseXML;
+        } else if (this.xhr.responseText && this.xhr.titanium) {
+            xml_doc = this._parseResponseText(this.xhr.responseText);
+        }
 
+        if (this._isValidResponse(xml_doc)) {
+            node = xml_doc.documentElement;
+        } else {
+            Strophe.error("invalid response received");
+            Strophe.error("responseText: " + this.xhr.responseText);
+            Strophe.error("responseXML: " +
+                Strophe.serialize(this.xhr.responseXML));
+            if (xml_doc) {
+                throw (new Error('parsererror'));              
+            }
+        }
         return node;
     },
 
-    /** PrivateFunction: _newXHR
-     *  _Private_ helper function to create XMLHttpRequests.
-     *
-     *  This function creates XMLHttpRequests across all implementations.
-     *
-     *  Returns:
-     *    A new XMLHttpRequest.
-     */
+   /** PrivateFunction: _isValidResponse
+    *  _Private_ helper function to check that a response body is valid.
+    *
+    *  Returns:
+    *    Boolean.
+    */
+    _isValidResponse: function (response) 
+    {
+        if (response && response.documentElement) {
+            if (response.childNodes[0]) {
+                return (response.childNodes[0].tagName !== 'parsererror');
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        } 
+    },
+
+   /** PrivateFunction: _newXHR
+    *  _Private_ helper function to create an xml document from a text response
+    *
+    *  This function creates an xml document from the responseText
+    *
+    *  Returns:
+    *    Document Object.
+    */    
+    _parseResponseText: function (response) 
+    {
+        if (typeof DOMParser !== 'undefined') {
+            return (new DOMParser().parseFromString(response, 'text/xml');
+        }
+    },
+
+  /** PrivateFunction: _newXHR
+   *  _Private_ helper function to create XMLHttpRequests.
+   *
+   *  This function creates XMLHttpRequests across all implementations.
+   *
+   *  Returns:
+   *    A new XMLHttpRequest.
+   */
     _newXHR: function ()
     {
         var xhr = null;
-        if (Titanium.Network) {
-          xhr = Titanium.Network.createHTTPClient();
-          xhr.setRequestHeader('Accept', 'text/xml, application/xml');
-          this._titanium = true;
+        if ((typeof Titanium !== 'undefined') && Titanium.Network) {
+            xhr = Titanium.Network.createHTTPClient();
+            xhr.titanium = true;
         } else if (window.XMLHttpRequest) {
             xhr = new XMLHttpRequest();
-            if (xhr.overrideMimeType) {
-                xhr.overrideMimeType("text/xml");
-            }
         } else if (window.ActiveXObject) {
             xhr = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+
+        if (xhr.overrideMimeType) {
+            xhr.overrideMimeType("text/xml");
         }
 
         xhr.onreadystatechange = this.func.prependArg(this);
